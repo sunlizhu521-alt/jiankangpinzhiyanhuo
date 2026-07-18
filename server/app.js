@@ -23,11 +23,14 @@ const dbPath = path.join(dataDir, 'db.json');
 const sqliteDbPath = path.join(dataDir, 'db.sqlite');
 const deploymentBackupDir = process.env.BACKUP_DIR ? path.resolve(process.env.BACKUP_DIR) : path.join(rootDir, 'backups');
 const port = Number(process.env.PORT || 4002);
-const ADMIN_NAME = process.env.ADMIN_NAME || '系统管理员';
+const ADMIN_NAME = process.env.ADMIN_NAME || '孙立柱';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
+const SECOND_ADMIN_NAME = process.env.SECOND_ADMIN_NAME || '胡远刚';
+const SECOND_ADMIN_PASSWORD = process.env.SECOND_ADMIN_PASSWORD || '';
 const DINGTALK_WEBHOOK = process.env.DINGTALK_WEBHOOK || '';
 const DINGTALK_SECRET = process.env.DINGTALK_SECRET || '';
 const DEFAULT_ADMIN_USER = { id: 'u-admin', name: ADMIN_NAME, password: ADMIN_PASSWORD, role: '管理员' };
+const SECOND_ADMIN_USER = { id: 'u-admin-secondary', name: SECOND_ADMIN_NAME, password: SECOND_ADMIN_PASSWORD, role: '管理员' };
 const ROLE_ADMIN = '管理员';
 const ROLE_USER = '普通用户';
 const LEGACY_DEFAULT_USER_IDS = new Set(['u-purchaser', 'u-inspector', 'u-settlement']);
@@ -54,7 +57,8 @@ const DEFAULT_PAGE_ACCESS_BY_ROLE = {
   [ROLE_USER]: []
 };
 const DEFAULT_USERS = [
-  DEFAULT_ADMIN_USER
+  DEFAULT_ADMIN_USER,
+  SECOND_ADMIN_USER
 ];
 const PRODUCT_CATEGORY_SLOT_ID = 'dimension-slot-1';
 const PURCHASE_WORK_DIVISION_SLOT_ID = 'dimension-slot-2';
@@ -449,29 +453,31 @@ async function verifyPassword(password, hash) {
   return password === hash;
 }
 
-async function syncPrimaryAdminCredentials() {
-  if (!ADMIN_PASSWORD) return;
-  const existing = getUserByName(DEFAULT_ADMIN_USER.name) || getUserById(DEFAULT_ADMIN_USER.id);
-  const passwordMatches = existing
-    ? await verifyPassword(ADMIN_PASSWORD, existing.password)
-    : false;
-  const accessMatches = existing
-    && existing.role === ROLE_ADMIN
-    && PAGE_KEYS.every((page) => existing.pageAccess?.includes(page))
-    && !existing.mustResetPassword;
-  if (passwordMatches && accessMatches) return;
-  const userId = existing?.id || DEFAULT_ADMIN_USER.id;
-  upsertUser({
-    ...existing,
-    id: userId,
-    name: DEFAULT_ADMIN_USER.name,
-    password: passwordMatches ? existing.password : await hashPassword(ADMIN_PASSWORD),
-    role: ROLE_ADMIN,
-    pageAccess: PAGE_KEYS,
-    mustResetPassword: false
-  });
-  if (!passwordMatches) deleteSessionsByUserId(userId);
-  console.log('[auth] primary admin credentials synchronized');
+async function syncBuiltInAdminCredentials() {
+  for (const defaultAdmin of DEFAULT_USERS) {
+    if (!defaultAdmin.password) continue;
+    const existing = getUserByName(defaultAdmin.name) || getUserById(defaultAdmin.id);
+    const passwordMatches = existing
+      ? await verifyPassword(defaultAdmin.password, existing.password)
+      : false;
+    const accessMatches = existing
+      && existing.role === ROLE_ADMIN
+      && PAGE_KEYS.every((page) => existing.pageAccess?.includes(page))
+      && !existing.mustResetPassword;
+    if (passwordMatches && accessMatches) continue;
+    const userId = existing?.id || defaultAdmin.id;
+    upsertUser({
+      ...existing,
+      id: userId,
+      name: defaultAdmin.name,
+      password: passwordMatches ? existing.password : await hashPassword(defaultAdmin.password),
+      role: ROLE_ADMIN,
+      pageAccess: PAGE_KEYS,
+      mustResetPassword: false
+    });
+    if (!passwordMatches) deleteSessionsByUserId(userId);
+    console.log(`[auth] built-in admin credentials synchronized: ${defaultAdmin.id}`);
+  }
 }
 
 function safeFileBaseName(value, fallback) {
@@ -709,7 +715,7 @@ async function ensureDb() {
       } catch {
         // 备份失败不阻塞启动
       }
-      await syncPrimaryAdminCredentials();
+      await syncBuiltInAdminCredentials();
       dbReady = true;
       deleteExpiredSessions();
       setTimeout(() => {
@@ -1167,7 +1173,7 @@ function isPrimaryAdminUser(user) {
 
 function requirePrimaryAdmin(req, res, next) {
   if (isPrimaryAdminUser(req.authUser)) return next();
-  return res.status(403).json({ error: '仅系统管理员管理员可以执行该操作' });
+  return res.status(403).json({ error: '仅主管理员可以执行该操作' });
 }
 
 function hasPageAccess(user, page) {
@@ -1837,7 +1843,7 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
     upsertUser(user);
   }
   if (!isPrimaryAdminUser(user) && !(user.pageAccess || []).length) {
-    return res.status(403).json({ error: '账号已注册，请等待管理员系统管理员授权页面后再登录' });
+    return res.status(403).json({ error: '账号已注册，请等待主管理员授权页面后再登录' });
   }
   const token = randomUUID();
   setSession(token, user.id, nowText());
@@ -1926,7 +1932,7 @@ app.post('/api/auth/users/:id/reset-password', requireAuth, requirePages('permis
   const db = await readDb();
   const target = db.users.find((user) => user.id === req.params.id);
   if (!target) return res.status(404).json({ error: '用户不存在' });
-  if (isPrimaryAdminUser(target)) return res.status(400).json({ error: '不能重置系统管理员管理员密码' });
+  if (isPrimaryAdminUser(target)) return res.status(400).json({ error: '不能重置主管理员密码' });
   const newPassword = String(req.body.newPassword || '123456').trim();
   target.password = await hashPassword(newPassword);
   target.mustResetPassword = true;
@@ -1942,7 +1948,7 @@ app.delete('/api/auth/users/:id', requireAuth, requirePages('permissionManagemen
   const db = await readDb();
   const target = db.users.find((user) => user.id === req.params.id);
   if (!target) return res.status(404).json({ error: '用户不存在' });
-  if (isPrimaryAdminUser(target)) return res.status(400).json({ error: '不能删除系统管理员管理员账号' });
+  if (isPrimaryAdminUser(target)) return res.status(400).json({ error: '不能删除主管理员账号' });
   db.users = db.users.filter((user) => user.id !== target.id);
   Object.entries(db.sessions || {}).forEach(([token, session]) => {
     if (session.userId === target.id) delete db.sessions[token];

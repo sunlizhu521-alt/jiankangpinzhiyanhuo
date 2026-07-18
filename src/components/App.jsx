@@ -328,7 +328,7 @@ function App() {
         return;
       }
       if (!isPrimaryAdminUser(matchedUser) && !(matchedUser.pageAccess || []).length) {
-        setMessage('账号已创建，请等待管理员系统管理员授权页面后再登录。');
+        setMessage('账号已创建，请等待主管理员授权页面后再登录。');
         return;
       }
       const payload = { id: matchedUser.id, name: matchedUser.name, role: matchedUser.role, pageAccess: matchedUser.pageAccess || [] };
@@ -621,7 +621,7 @@ function App() {
 
   async function deleteLedgerImportData(mode = 'latest') {
     if (!isPrimaryAdminUser(user)) {
-      setMessage('仅系统管理员管理员可以删除历史台账导入数据。');
+      setMessage('仅主管理员可以删除历史台账导入数据。');
       return;
     }
     const isAll = mode === 'all';
@@ -781,7 +781,7 @@ function App() {
 
   function deleteNoticeRow(id) {
     if (!isPrimaryAdminUser(user)) {
-      setMessage('仅系统管理员管理员可以删除验货通知行。');
+      setMessage('仅主管理员可以删除验货通知行。');
       return;
     }
     setNoticeRows((rows) => rows.length > 1 ? rows.filter((row) => row.id !== id) : [createBlankNoticeRow({ inspectionApplicant: user.name })]);
@@ -789,7 +789,7 @@ function App() {
 
   function clearNoticeRows() {
     if (!isPrimaryAdminUser(user)) {
-      setMessage('仅系统管理员管理员可以清除验货通知内容。');
+      setMessage('仅主管理员可以清除验货通知内容。');
       return;
     }
     setNoticeRows([createBlankNoticeRow({ inspectionApplicant: user.name })]);
@@ -1152,7 +1152,7 @@ function App() {
   async function deleteUserAccount(targetUser) {
     if (!targetUser?.id || targetUser.name === DEFAULT_ADMIN_USER.name) return;
     if (!isPrimaryAdminUser(user)) {
-      setMessage('仅系统管理员管理员可以删除账号。');
+      setMessage('仅主管理员可以删除账号。');
       return;
     }
     if (!window.confirm(`确认删除账号：${targetUser.name}？`)) return;
@@ -1182,7 +1182,7 @@ function App() {
 
   async function createUserAccount(name, password) {
     if (!isPrimaryAdminUser(user)) {
-      setMessage('仅系统管理员管理员可以创建账号。');
+      setMessage('仅主管理员可以创建账号。');
       return false;
     }
     setSavingId('creating');
@@ -1225,7 +1225,7 @@ function App() {
   async function resetUserPassword(targetUser) {
     if (!targetUser?.id) return;
     if (!isPrimaryAdminUser(user)) {
-      setMessage('仅系统管理员管理员可以重置密码。');
+      setMessage('仅主管理员可以重置密码。');
       return;
     }
     if (!window.confirm(`确认重置 ${targetUser.name} 的密码？重置后密码为 123456，用户需在首次登录时修改。`)) return;
@@ -1508,7 +1508,7 @@ function App() {
 
   async function deleteDimensionSlot(slotId) {
     if (!isPrimaryAdminUser(user)) {
-      setMessage('仅系统管理员管理员可以删除维度表槽位。');
+      setMessage('仅主管理员可以删除维度表槽位。');
       return;
     }
     const next = { ...dimensionLibrary, [slotId]: null };
@@ -1632,7 +1632,7 @@ function App() {
 
   async function clearScheduleContent() {
     if (!isPrimaryAdminUser(user)) {
-      setMessage('仅系统管理员管理员可以清除验货安排内容。');
+      setMessage('仅主管理员可以清除验货安排内容。');
       return;
     }
     setSavingId('inspectionScheduleClear');
@@ -1670,7 +1670,7 @@ function App() {
 
   async function deleteScheduleNotice(recordIds) {
     if (!isPrimaryAdminUser(user)) {
-      setMessage('仅系统管理员管理员可以删除验货安排记录。');
+      setMessage('仅主管理员可以删除验货安排记录。');
       return;
     }
     const targetIds = Array.isArray(recordIds) ? recordIds.filter(Boolean) : [recordIds].filter(Boolean);
@@ -1950,7 +1950,7 @@ function App() {
 
   async function deleteReport(record) {
     if (!isPrimaryAdminUser(user)) {
-      setMessage('仅系统管理员管理员可以删除检验报告单。');
+      setMessage('仅主管理员可以删除检验报告单。');
       return;
     }
     if (!window.confirm('确认删除该检验报告单？删除后可重新上传。')) return;
@@ -2183,7 +2183,7 @@ function App() {
 
   async function deleteReworkRecord(record) {
     if (!isPrimaryAdminUser(user)) {
-      setMessage('仅系统管理员管理员可以删除复验通知。');
+      setMessage('仅主管理员可以删除复验通知。');
       return false;
     }
     if (!record || !window.confirm('确认删除当前复验通知？')) return false;
@@ -2564,7 +2564,7 @@ function App() {
 
   async function deleteReportLibraryFile(file) {
     if (!isPrimaryAdminUser(user)) {
-      setMessage('仅系统管理员管理员可以删除报告单文件。');
+      setMessage('仅主管理员可以删除报告单文件。');
       return;
     }
     if (!window.confirm(`确认删除文件：${file.fileName}？`)) return;
@@ -2610,7 +2610,7 @@ function App() {
 
   async function deleteReportLibraryFiles(files) {
     if (!isPrimaryAdminUser(user)) {
-      setMessage('仅系统管理员管理员可以批量删除报告单文件。');
+      setMessage('仅主管理员可以批量删除报告单文件。');
       return false;
     }
     const targetFiles = Array.from(files || []).filter((file) => file?.fileName);
@@ -2666,7 +2666,7 @@ function App() {
 
   async function deleteInspectionRecord(record) {
     if (!isPrimaryAdminUser(user)) {
-      setMessage('仅系统管理员管理员可以删除单条信息。');
+      setMessage('仅主管理员可以删除单条信息。');
       return;
     }
     if (!record) return;
@@ -2917,7 +2917,7 @@ function App() {
       <main className="login-shell">
         <section className="login-panel waiting-panel">
           <h1>等待授权</h1>
-          <p className="auth-note">账号 {user.name} 已注册，请联系管理员系统管理员在“权限管理”页面授权可访问页面。</p>
+          <p className="auth-note">账号 {user.name} 已注册，请联系主管理员在“权限管理”页面授权可访问页面。</p>
           {message && <p className="message">{message}</p>}
           <button type="button" onClick={logout}>退出登录</button>
         </section>
