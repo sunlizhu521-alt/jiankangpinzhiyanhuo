@@ -58,7 +58,7 @@ jobs:
             --exclude=data \
             --exclude=backups \
             --exclude=.env \
-            -czf "${APP_NAME}.tar.gz" .
+            -czf "/tmp/${APP_NAME}.tar.gz" .
           {
             printf 'PORT=%s\n' "$APP_PORT"
             printf 'DATA_DIR=%s/data\n' "$APP_DIR"
@@ -84,7 +84,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          scp "${APP_NAME}.tar.gz" "${APP_NAME}.env" \
+          scp "/tmp/${APP_NAME}.tar.gz" "${APP_NAME}.env" \
             "$TENCENT_USER@$TENCENT_HOST:/tmp/"
 
       - name: Deploy and restart only this project
