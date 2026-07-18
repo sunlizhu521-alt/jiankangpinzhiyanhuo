@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
@@ -22,7 +23,7 @@ const dimensionUploadDir = path.join(dataDir, 'dimension-uploads');
 const dbPath = path.join(dataDir, 'db.json');
 const sqliteDbPath = path.join(dataDir, 'db.sqlite');
 const deploymentBackupDir = process.env.BACKUP_DIR ? path.resolve(process.env.BACKUP_DIR) : path.join(rootDir, 'backups');
-const port = Number(process.env.PORT || 4002);
+const port = Number(process.env.PORT || 4007);
 const ADMIN_NAME = process.env.ADMIN_NAME || '孙立柱';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
 const SECOND_ADMIN_NAME = process.env.SECOND_ADMIN_NAME || '胡远刚';

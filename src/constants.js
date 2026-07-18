@@ -1,4 +1,4 @@
-const API = import.meta.env.DEV ? 'http://localhost:4002' : '';
+const API = import.meta.env.DEV ? 'http://localhost:4007' : '';
 const STATIC_MODE = import.meta.env.VITE_STATIC_MODE === '1';
 const STATIC_DB_KEY = 'qualityInspectionStaticDb';
 const DIMENSION_LIBRARY_KEY = 'qualityInspectionDimensionLibrary';

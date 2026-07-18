@@ -6,7 +6,7 @@ module.exports = {
       cwd: __dirname,
       env: {
         NODE_ENV: 'production',
-        PORT: 4002,
+        PORT: Number(process.env.PORT || 4007),
         DATA_DIR: './data',
         BACKUP_DIR: './backups',
         DINGTALK_WEBHOOK: process.env.DINGTALK_WEBHOOK || '',

@@ -1,0 +1,125 @@
+name: Deploy Tencent Cloud
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: jiankangpinzhiyanhuo-tencent
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      APP_NAME: jiankangpinzhiyanhuo
+      APP_DIR: /home/ubuntu/zhuge-ai-lab/jiankangpinzhiyanhuo
+      APP_PORT: "4007"
+      TENCENT_HOST: 129.211.9.242
+      TENCENT_USER: ubuntu
+      ADMIN_PASSWORD: ${{ secrets.JIANKANG_ADMIN_PASSWORD }}
+      SECOND_ADMIN_PASSWORD: ${{ secrets.JIANKANG_SECOND_ADMIN_PASSWORD }}
+      DINGTALK_WEBHOOK: ${{ secrets.JIANKANG_DINGTALK_WEBHOOK }}
+      DINGTALK_SECRET: ${{ secrets.JIANKANG_DINGTALK_SECRET }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Create deployment files
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar \
+            --exclude=.git \
+            --exclude=.github \
+            --exclude=node_modules \
+            --exclude=data \
+            --exclude=backups \
+            --exclude=.env \
+            -czf "${APP_NAME}.tar.gz" .
+          {
+            printf 'PORT=%s\n' "$APP_PORT"
+            printf 'DATA_DIR=%s/data\n' "$APP_DIR"
+            printf 'BACKUP_DIR=%s/backups\n' "$APP_DIR"
+            printf 'ADMIN_PASSWORD=%s\n' "$ADMIN_PASSWORD"
+            printf 'SECOND_ADMIN_PASSWORD=%s\n' "$SECOND_ADMIN_PASSWORD"
+            printf 'DINGTALK_WEBHOOK=%s\n' "$DINGTALK_WEBHOOK"
+            printf 'DINGTALK_SECRET=%s\n' "$DINGTALK_SECRET"
+          } > "${APP_NAME}.env"
+
+      - name: Configure SSH
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$TENCENT_HOST"
+          test -n "$TENCENT_USER"
+          install -m 700 -d ~/.ssh
+          printf '%s\n' '${{ secrets.TENCENT_SSH_KEY }}' > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "$TENCENT_HOST" >> ~/.ssh/known_hosts
+
+      - name: Upload release
+        shell: bash
+        run: |
+          set -euo pipefail
+          scp "${APP_NAME}.tar.gz" "${APP_NAME}.env" \
+            "$TENCENT_USER@$TENCENT_HOST:/tmp/"
+
+      - name: Deploy and restart only this project
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh "$TENCENT_USER@$TENCENT_HOST" \
+            "APP_NAME='$APP_NAME' APP_DIR='$APP_DIR' APP_PORT='$APP_PORT' bash -s" <<'REMOTE'
+          set -euo pipefail
+
+          ARCHIVE="/tmp/${APP_NAME}.tar.gz"
+          ENV_FILE="/tmp/${APP_NAME}.env"
+          mkdir -p "$APP_DIR" "$APP_DIR/data" "$APP_DIR/backups"
+
+          if [ -d "$APP_DIR/data" ] && [ -n "$(find "$APP_DIR/data" -mindepth 1 -print -quit)" ]; then
+            BACKUP_FILE="$APP_DIR/backups/data-$(date +%Y%m%d-%H%M%S).tar.gz"
+            tar -czf "$BACKUP_FILE" -C "$APP_DIR" data
+            test -s "$BACKUP_FILE"
+            ls -lh "$BACKUP_FILE"
+          fi
+
+          tar -xzf "$ARCHIVE" -C "$APP_DIR"
+          mv "$ENV_FILE" "$APP_DIR/.env"
+          chmod 600 "$APP_DIR/.env"
+
+          cd "$APP_DIR"
+          npm ci --omit=dev
+
+          if pm2 describe "$APP_NAME" >/dev/null 2>&1; then
+            pm2 restart "$APP_NAME" --update-env
+          else
+            pm2 start server/app.js --name "$APP_NAME"
+          fi
+
+          pm2 save
+          curl --fail --silent --show-error "http://127.0.0.1:${APP_PORT}/api/health"
+          rm -f "$ARCHIVE"
+          REMOTE
