@@ -121,6 +121,17 @@ jobs:
           fi
 
           pm2 save
-          curl --fail --silent --show-error "http://127.0.0.1:${APP_PORT}/api/health"
+          HEALTH_OK=0
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent --show-error "http://127.0.0.1:${APP_PORT}/api/health"; then
+              HEALTH_OK=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$HEALTH_OK" -ne 1 ]; then
+            pm2 logs "$APP_NAME" --lines 50 --nostream
+            exit 1
+          fi
           rm -f "$ARCHIVE"
           REMOTE
