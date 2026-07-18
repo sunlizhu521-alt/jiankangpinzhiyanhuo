@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 360" role="img" aria-labelledby="title desc">
+  <title id="title">示例质检合格章</title>
+  <desc id="desc">不包含企业名称或印章编号的架构占位图</desc>
+  <rect width="480" height="360" fill="#fff"/>
+  <ellipse cx="240" cy="180" rx="220" ry="160" fill="none" stroke="#ef233c" stroke-width="12"/>
+  <path d="m240 75 18 55h58l-47 34 18 55-47-34-47 34 18-55-47-34h58z" fill="#ef233c"/>
+  <text x="240" y="265" text-anchor="middle" font-family="sans-serif" font-size="38" fill="#ef233c">示例检验合格章</text>
+  <text x="240" y="310" text-anchor="middle" font-family="sans-serif" font-size="22" fill="#ef233c">请替换为已授权印章</text>
+</svg>

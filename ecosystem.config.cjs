@@ -1,0 +1,19 @@
+module.exports = {
+  apps: [
+    {
+      name: 'jiankangpinzhiyanhuo',
+      script: 'server/app.js',
+      cwd: __dirname,
+      env: {
+        NODE_ENV: 'production',
+        PORT: 4002,
+        DATA_DIR: './data',
+        BACKUP_DIR: './backups',
+        DINGTALK_WEBHOOK: process.env.DINGTALK_WEBHOOK || '',
+        DINGTALK_SECRET: process.env.DINGTALK_SECRET || '',
+        ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || ''
+      },
+      max_memory_restart: '512M'
+    }
+  ]
+};

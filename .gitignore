@@ -1,0 +1,9 @@
+node_modules
+dist
+server-start.*.log
+data/
+backups/
+*.log
+.env
+.env.*
+!.env.example
