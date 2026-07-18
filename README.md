@@ -47,7 +47,7 @@ npm run backup
 
 ## GitHub Pages
 
-推送到 `main` 后，保留的 Pages 工作流会构建静态预览：
+仓库保留了手动触发的 Pages 工作流。首次使用前，请在仓库 `Settings → Pages` 中将 Source 设置为 `GitHub Actions`，然后在 Actions 页面手动运行 `Deploy GitHub Pages`：
 
 https://sunlizhu521-alt.github.io/jiankangpinzhiyanhuo/
 
